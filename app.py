@@ -1,7 +1,11 @@
+import traceback
+
 import streamlit as st
 
-from db import run_query
-from filters import build_where_clause, render_sidebar_filters
+import detail_tab
+import overview_tab
+import trends_tab
+from filters import render_sidebar_filters
 
 st.set_page_config(
     page_title="Conference Analysis Dashboard",
@@ -11,25 +15,31 @@ st.set_page_config(
 
 st.title("Conference Analysis Dashboard")
 st.caption(
-    "Live view into which conferences move companies through the deal pipeline, "
-    "so associates can weigh outcomes against time invested."
+    "See which conferences move companies through the deal pipeline, "
+    "so you can weigh outcomes against time invested."
 )
 
 try:
     filters = render_sidebar_filters()
-except Exception as exc:
-    st.error(f"Snowflake connection failed while loading filters: {exc}")
+except Exception:
+    st.error("Something went wrong loading the dashboard. Please refresh the page.")
     st.stop()
 
-where_sql, params = build_where_clause(filters)
+def _safe_render(render_fn, filters):
+    try:
+        render_fn(filters)
+    except Exception:
+        traceback.print_exc()
+        st.error("Something went wrong loading this data. Please try adjusting your filters or refresh.")
 
-try:
-    df = run_query(
-        f"SELECT COUNT(*) AS N FROM CONF_ROI_BASE WHERE {where_sql}", params
-    )
-    st.success(f"Connected to Snowflake — {int(df.iloc[0]['N'])} conferences match current filters.")
-except Exception as exc:
-    st.error(f"Query failed: {exc}")
-    st.stop()
 
-st.info("Overview, per-conference, and series-trend pages land in the next steps.")
+tab_overview, tab_detail, tab_trends = st.tabs(
+    ["\U0001F4CA Overview", "\U0001F3AF Conference Detail", "\U0001F4C8 Series Trends"]
+)
+
+with tab_overview:
+    _safe_render(overview_tab.render, filters)
+with tab_detail:
+    _safe_render(detail_tab.render, filters)
+with tab_trends:
+    _safe_render(trends_tab.render, filters)

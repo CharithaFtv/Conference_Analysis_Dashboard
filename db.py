@@ -1,4 +1,5 @@
 import os
+import time
 
 import pandas as pd
 import snowflake.connector
@@ -59,10 +60,17 @@ def get_connection():
 
 @st.cache_data(ttl=60, show_spinner=False)
 def run_query(sql: str, params: tuple | dict | None = None) -> pd.DataFrame:
-    conn = get_connection()
-    cur = conn.cursor()
-    try:
-        cur.execute(sql, params)
-        return cur.fetch_pandas_all()
-    finally:
-        cur.close()
+    last_exc: Exception | None = None
+    for attempt in range(3):
+        conn = get_connection()
+        cur = conn.cursor()
+        try:
+            cur.execute(sql, params)
+            return cur.fetch_pandas_all()
+        except Exception as exc:
+            last_exc = exc
+            get_connection.clear()
+            time.sleep(0.5 * (attempt + 1))
+        finally:
+            cur.close()
+    raise last_exc

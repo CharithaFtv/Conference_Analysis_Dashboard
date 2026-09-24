@@ -49,26 +49,49 @@ def _load_distinct(column: str) -> list[str]:
     return df["VAL"].tolist()
 
 
+FILTER_WIDGET_KEYS = [
+    "filter_year",
+    "filter_sectors",
+    "filter_countries",
+    "filter_states",
+    "filter_cities",
+    "filter_source_types",
+    "filter_priorities",
+]
+
+
 def render_sidebar_filters() -> FilterState:
     min_year, max_year = _load_years()
 
     st.sidebar.header("Filters")
 
+    if st.sidebar.button("Reset filters"):
+        for key in FILTER_WIDGET_KEYS:
+            st.session_state.pop(key, None)
+        st.rerun()
+
     year_range = st.sidebar.slider(
-        "Year", min_value=min_year, max_value=max_year, value=(min_year, max_year)
+        "Year",
+        min_value=min_year,
+        max_value=max_year,
+        value=(min_year, max_year),
+        key="filter_year",
     )
 
-    sectors = st.sidebar.multiselect("Sector", options=_load_sectors())
+    sectors = st.sidebar.multiselect("Sector", options=_load_sectors(), key="filter_sectors")
 
-    countries = st.sidebar.multiselect("Country", options=_load_distinct("COUNTRY"))
-    states = st.sidebar.multiselect("State", options=_load_distinct("STATE"))
-    cities = st.sidebar.multiselect("City", options=_load_distinct("CITY"))
+    countries = st.sidebar.multiselect(
+        "Country", options=_load_distinct("COUNTRY"), key="filter_countries"
+    )
+    states = st.sidebar.multiselect("State", options=_load_distinct("STATE"), key="filter_states")
+    cities = st.sidebar.multiselect("City", options=_load_distinct("CITY"), key="filter_cities")
 
-    source_types = st.sidebar.multiselect("Source Type", options=_load_distinct("SOURCE_TYPE"))
-    priorities = st.sidebar.multiselect("Priority", options=_load_distinct("PRIORITY"))
-
-    if st.sidebar.button("Reset filters"):
-        st.rerun()
+    source_types = st.sidebar.multiselect(
+        "Source Type", options=_load_distinct("SOURCE_TYPE"), key="filter_source_types"
+    )
+    priorities = st.sidebar.multiselect(
+        "Priority", options=_load_distinct("PRIORITY"), key="filter_priorities"
+    )
 
     return FilterState(
         year_range=year_range,
