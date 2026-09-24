@@ -103,17 +103,13 @@ def build_where_clause(filters: FilterState, table_alias: str = "") -> tuple[str
     _in_clause("PRIORITY", filters.priorities, "priority")
 
     if filters.sectors:
-        names = []
+        sector_ors = []
+        normalized = f"(',' || REPLACE({prefix}SECTORS, ' ', '') || ',')"
         for i, s in enumerate(filters.sectors):
             pname = f"sector_{i}"
-            params[pname] = s
-            names.append(f"%({pname})s")
-        clauses.append(
-            f"{prefix}CONFERENCE_ID IN ("
-            f"SELECT cb.CONFERENCE_ID FROM {BASE_TABLE} cb, "
-            f"LATERAL SPLIT_TO_TABLE(cb.SECTORS, ',') st "
-            f"WHERE TRIM(st.value) IN ({', '.join(names)}))"
-        )
+            params[pname] = f",{s},"
+            sector_ors.append(f"{normalized} LIKE '%%' || %({pname})s || '%%'")
+        clauses.append(f"({' OR '.join(sector_ors)})")
 
     return " AND ".join(clauses), params
 
