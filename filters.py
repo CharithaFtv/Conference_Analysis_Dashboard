@@ -116,3 +116,9 @@ def build_where_clause(filters: FilterState, table_alias: str = "") -> tuple[str
         )
 
     return " AND ".join(clauses), params
+
+
+def build_conference_id_subquery(filters: FilterState) -> tuple[str, dict]:
+    where_sql, params = build_where_clause(filters, table_alias="cb")
+    subquery = f"SELECT cb.CONFERENCE_ID FROM {BASE_TABLE} cb WHERE {where_sql}"
+    return subquery, params
