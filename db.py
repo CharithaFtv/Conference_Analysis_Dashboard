@@ -10,6 +10,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+_ca_bundle = os.getenv("SNOWFLAKE_CA_BUNDLE")
+if _ca_bundle:
+    os.environ.setdefault("REQUESTS_CA_BUNDLE", _ca_bundle)
+    os.environ.setdefault("SSL_CERT_FILE", _ca_bundle)
+
 REQUIRED_ENV_VARS = [
     "SNOWFLAKE_ACCOUNT",
     "SNOWFLAKE_USER",
