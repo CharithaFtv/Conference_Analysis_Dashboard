@@ -3,62 +3,38 @@
 import pandas as pd
 import plotly.graph_objects as go
 
-from conf_dashboard.analytics.trends import SERIES_METRICS
 from conf_dashboard.charts.theme import CATEGORICAL, base_layout
 
 
-def build_metrics_line(yearly_df: pd.DataFrame) -> go.Figure:
+def build_score_trend(history_df: pd.DataFrame, yearly_df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
-    for i, (col, label) in enumerate(SERIES_METRICS):
-        fig.add_trace(
-            go.Scatter(
-                x=yearly_df["CONFERENCE_YEAR"],
-                y=yearly_df[col],
-                mode="lines+markers",
-                name=label,
-                line=dict(color=CATEGORICAL[i], width=2),
-                marker=dict(size=8),
-                hovertemplate=f"%{{x}}<br>{label}: %{{y}}<extra></extra>",
-            )
+    fig.add_trace(
+        go.Scatter(
+            x=yearly_df["CONFERENCE_YEAR"],
+            y=yearly_df["COMPOSITE_SCORE"],
+            mode="lines+markers",
+            name="Yearly Avg Score",
+            line=dict(color=CATEGORICAL[0], width=2),
+            marker=dict(size=9),
+            hovertemplate="%{x}<br>Avg Score: %{y:.1f}<extra></extra>",
         )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=history_df["CONFERENCE_YEAR"],
+            y=history_df["COMPOSITE_SCORE"],
+            mode="markers",
+            name="Individual Conferences",
+            marker=dict(size=7, color=CATEGORICAL[1], symbol="circle-open"),
+            text=history_df["CONFERENCE_NAME"],
+            hovertemplate="%{text}<br>%{x}: %{y:.1f}<extra></extra>",
+        )
+    )
     fig.update_layout(
         xaxis_title="Year",
-        yaxis_title="Count",
+        yaxis_title="Composite Score (0–100)",
+        yaxis=dict(range=[0, 100]),
         xaxis=dict(dtick=1),
-        legend_title_text="Metric",
+        legend_title_text=None,
     )
     return base_layout(fig, height=420)
-
-
-def build_conversion_line(yearly_df: pd.DataFrame) -> go.Figure:
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            x=yearly_df["CONFERENCE_YEAR"],
-            y=yearly_df["HQT_CONVERSION_RATE"],
-            mode="lines+markers",
-            name="Companies Met → HQT",
-            line=dict(color=CATEGORICAL[0], width=2),
-            marker=dict(size=8),
-            hovertemplate="%{x}<br>Companies Met → HQT: %{y:.1%}<extra></extra>",
-        )
-    )
-    fig.add_trace(
-        go.Scatter(
-            x=yearly_df["CONFERENCE_YEAR"],
-            y=yearly_df["HQM_CONVERSION_RATE"],
-            mode="lines+markers",
-            name="HQT → HQM",
-            line=dict(color=CATEGORICAL[1], width=2),
-            marker=dict(size=8),
-            hovertemplate="%{x}<br>HQT → HQM: %{y:.1%}<extra></extra>",
-        )
-    )
-    fig.update_layout(
-        xaxis_title="Year",
-        yaxis_title="Conversion Rate",
-        yaxis_tickformat=".0%",
-        xaxis=dict(dtick=1),
-        legend_title_text="Conversion",
-    )
-    return base_layout(fig, height=380)

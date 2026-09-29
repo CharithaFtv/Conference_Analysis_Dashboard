@@ -1,14 +1,15 @@
 import streamlit as st
 
-from conf_dashboard.analytics.overview import (
+from conf_dashboard.analytics.conferences import (
     compute_kpis,
     rank_by_score,
     search_by_name,
     to_display_table,
     top_performers,
+    with_conversion_rates,
 )
-from conf_dashboard.charts.overview_charts import build_score_breakdown_bar, build_top_performers_bar
-from conf_dashboard.data.overview_repo import get_kpi_totals, get_scored_conferences
+from conf_dashboard.charts.conferences_charts import build_score_breakdown_bar, build_top_performers_bar
+from conf_dashboard.data.conferences_repo import get_kpi_totals, get_scored_conferences
 from conf_dashboard.filters.model import FilterState
 from conf_dashboard.filters.query_builder import build_where_clause
 
@@ -29,7 +30,7 @@ def render(filters: FilterState) -> None:
 
     st.divider()
 
-    full_df = rank_by_score(get_scored_conferences(where_sql, params))
+    full_df = rank_by_score(with_conversion_rates(get_scored_conferences(where_sql, params)))
 
     st.subheader(f"All Conferences ({len(full_df)})")
     search = st.text_input("Search by conference name", placeholder="e.g. Money2020, RSA, SaaStr...")
@@ -43,23 +44,20 @@ def render(filters: FilterState) -> None:
         height=420,
         column_config={
             "Score": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.1f"),
-            "HQT Conv. Rate": st.column_config.NumberColumn(format="%.2f"),
-            "HQM Conv. Rate": st.column_config.NumberColumn(format="%.2f"),
+            "HQT Conv. Rate": st.column_config.NumberColumn(format="%.1f%%"),
+            "HQM Conv. Rate": st.column_config.NumberColumn(format="%.1f%%"),
             "Rank": st.column_config.NumberColumn(format="%d"),
         },
         selection_mode="single-row",
         on_select="rerun",
-        key="overview_table",
+        key="conferences_table",
     )
 
     selected_rows = event.selection.rows if event and event.selection else []
     if selected_rows:
         picked = table_df.iloc[selected_rows[0]]
-        st.session_state["selected_conference_id"] = picked["CONFERENCE_ID"]
-        st.info(
-            f"Selected **{picked['CONFERENCE_NAME']}** — open the "
-            "**Conference Detail** tab to see its full breakdown."
-        )
+        with st.expander(f"All fields — {picked['CONFERENCE_NAME']}", expanded=True):
+            st.dataframe(picked.to_frame().T, use_container_width=True, hide_index=True)
 
     st.divider()
 

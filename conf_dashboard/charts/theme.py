@@ -26,16 +26,24 @@ INK_MUTED = "#898781"
 GRIDLINE = "#e1e0d9"
 SURFACE = "#fcfcfb"
 
-SCORE_COLUMNS = [
+CONFERENCE_SCORE_COLUMNS = [
     ("SCORE_COMPANIES_MET", "Companies Met"),
-    ("SCORE_HQT_CONVERSION", "HQT Conversion"),
-    ("SCORE_HQM_POTENTIAL", "HQM Potential"),
+    ("SCORE_HQTS_SOURCED", "HQTs Sourced"),
+    ("SCORE_HQTS_TOP_PROSPECT", "HQTs → Top Prospect"),
     ("SCORE_YOY_SERIES", "YoY Series"),
-    ("SCORE_SECTOR_IMPACT", "Sector Impact"),
     ("SCORE_TOUGH_TO_CRACK", "Tough to Crack"),
 ]
 
-SCORE_COLORS = dict(zip([c for c, _ in SCORE_COLUMNS], CATEGORICAL))
+SERIES_SCORE_COLUMNS = [
+    ("SCORE_COMPANIES_MET", "Companies Met"),
+    ("SCORE_HQTS_SOURCED", "HQTs Sourced"),
+    ("SCORE_HQTS_TOP_PROSPECT", "HQTs → Top Prospect"),
+    ("SCORE_YOY_CONSISTENCY", "YoY Consistency"),
+    ("SCORE_TOUGH_TO_CRACK", "Tough to Crack"),
+]
+
+CONFERENCE_SCORE_COLORS = dict(zip([c for c, _ in CONFERENCE_SCORE_COLUMNS], CATEGORICAL))
+SERIES_SCORE_COLORS = dict(zip([c for c, _ in SERIES_SCORE_COLUMNS], CATEGORICAL))
 
 
 def base_layout(fig, height: int | None = None):

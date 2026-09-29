@@ -1,9 +1,14 @@
-"""Figure builders for the Overview tab."""
+"""Figure builders for the Individual Conferences tab."""
 
 import pandas as pd
 import plotly.graph_objects as go
 
-from conf_dashboard.charts.theme import SCORE_COLORS, SCORE_COLUMNS, SEQUENTIAL_BLUE, base_layout
+from conf_dashboard.charts.theme import (
+    CONFERENCE_SCORE_COLORS,
+    CONFERENCE_SCORE_COLUMNS,
+    SEQUENTIAL_BLUE,
+    base_layout,
+)
 
 
 def build_top_performers_bar(top_df: pd.DataFrame) -> go.Figure:
@@ -22,14 +27,14 @@ def build_top_performers_bar(top_df: pd.DataFrame) -> go.Figure:
 
 def build_score_breakdown_bar(breakdown_df: pd.DataFrame) -> go.Figure:
     fig = go.Figure()
-    for col, label in SCORE_COLUMNS:
+    for col, label in CONFERENCE_SCORE_COLUMNS:
         fig.add_trace(
             go.Bar(
                 name=label,
                 x=breakdown_df[col],
                 y=breakdown_df["CONFERENCE_NAME"],
                 orientation="h",
-                marker_color=SCORE_COLORS[col],
+                marker_color=CONFERENCE_SCORE_COLORS[col],
                 hovertemplate=f"%{{y}}<br>{label}: %{{x:.1f}}<extra></extra>",
             )
         )

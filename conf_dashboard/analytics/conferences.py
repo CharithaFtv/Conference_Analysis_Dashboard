@@ -1,4 +1,4 @@
-"""Overview-tab computations: KPI derivation, ranking, search, top-N selection."""
+"""Individual Conferences-tab computations: KPI derivation, ranking, search, top-N selection."""
 
 import pandas as pd
 
@@ -12,9 +12,10 @@ DISPLAY_COLUMNS = {
     "SOURCE_TYPE": "Type",
     "PRIORITY": "Priority",
     "SECTORS": "Sectors",
-    "COMPANIES_MET": "Companies Met",
+    "CONSOLIDATED_COMPANIES_MET": "Companies Met",
     "HQTS_SOURCED": "HQTs Sourced",
     "HQTS_AT_HQM": "HQTs at HQM",
+    "HQTS_AT_TOP_PROSPECT": "HQTs at Top Prospect",
     "TOUGH_TO_CRACK_TO_HQM": "Tough→HQM",
     "HQT_CONVERSION_RATE": "HQT Conv. Rate",
     "HQM_CONVERSION_RATE": "HQM Conv. Rate",
@@ -35,6 +36,16 @@ def compute_kpis(totals_row: pd.Series) -> dict:
         "total_hqm": total_hqm,
         "hqm_rate": hqm_rate,
     }
+
+
+def with_conversion_rates(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    companies_met = df["CONSOLIDATED_COMPANIES_MET"].fillna(df["COMPANIES_MET"])
+    df["HQT_CONVERSION_RATE"] = (df["HQTS_SOURCED"] / companies_met * 100).where(companies_met > 0)
+    df["HQM_CONVERSION_RATE"] = (df["HQTS_AT_HQM"] / df["HQTS_SOURCED"] * 100).where(
+        df["HQTS_SOURCED"] > 0
+    )
+    return df
 
 
 def rank_by_score(df: pd.DataFrame) -> pd.DataFrame:

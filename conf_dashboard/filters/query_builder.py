@@ -4,7 +4,7 @@ No Streamlit or database imports here: these functions are plain data-in,
 data-out, so they can be unit tested without a Snowflake connection.
 """
 
-from conf_dashboard.config import BASE_TABLE
+from conf_dashboard.config import BASE_TABLE, SERIES_MAP_TABLE
 from conf_dashboard.filters.model import FilterState
 
 
@@ -44,4 +44,19 @@ def build_where_clause(filters: FilterState, table_alias: str = "") -> tuple[str
 def build_conference_id_subquery(filters: FilterState) -> tuple[str, dict]:
     where_sql, params = build_where_clause(filters, table_alias="cb")
     subquery = f"SELECT cb.CONFERENCE_ID FROM {BASE_TABLE} cb WHERE {where_sql}"
+    return subquery, params
+
+
+def build_series_subquery(filters: FilterState) -> tuple[str, dict]:
+    """Canonical series names of conferences matching the filters.
+
+    Series-level tables (CONF_SERIES_SCORECARD) don't carry per-conference
+    attributes like country/city/sector, so filtering them means resolving
+    to the set of qualifying series via the conference-level base table.
+    """
+    where_sql, params = build_where_clause(filters, table_alias="cb")
+    subquery = (
+        f"SELECT DISTINCT m.CANONICAL_SERIES FROM {BASE_TABLE} cb "
+        f"JOIN {SERIES_MAP_TABLE} m ON cb.CONFERENCE_ID = m.ID WHERE {where_sql}"
+    )
     return subquery, params
