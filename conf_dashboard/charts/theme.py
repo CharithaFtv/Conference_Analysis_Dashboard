@@ -1,3 +1,5 @@
+"""Shared color palette and Plotly layout defaults."""
+
 CATEGORICAL = [
     "#2a78d6",  # blue
     "#eb6834",  # orange

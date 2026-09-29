@@ -1,3 +1,10 @@
+"""Low-level Snowflake connection and query execution.
+
+This is the only module that knows about `snowflake.connector`. Everything
+else in the app talks to data through `run_query`, so the connection/retry
+details can change here without rippling to callers.
+"""
+
 import os
 import time
 
@@ -6,24 +13,8 @@ import snowflake.connector
 import streamlit as st
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
-from dotenv import load_dotenv
 
-load_dotenv()
-
-_ca_bundle = os.getenv("SNOWFLAKE_CA_BUNDLE")
-if _ca_bundle:
-    os.environ.setdefault("REQUESTS_CA_BUNDLE", _ca_bundle)
-    os.environ.setdefault("SSL_CERT_FILE", _ca_bundle)
-
-REQUIRED_ENV_VARS = [
-    "SNOWFLAKE_ACCOUNT",
-    "SNOWFLAKE_USER",
-    "SNOWFLAKE_ROLE",
-    "SNOWFLAKE_WAREHOUSE",
-    "SNOWFLAKE_DATABASE",
-    "SNOWFLAKE_SCHEMA",
-    "SNOWFLAKE_PRIVATE_KEY_PATH",
-]
+from conf_dashboard.config import REQUIRED_ENV_VARS
 
 
 def _load_private_key(path: str, passphrase: str | None) -> bytes:
