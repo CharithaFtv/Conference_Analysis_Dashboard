@@ -245,4 +245,4 @@ The "Conference Detail" tab was removed; the old previously-flagged divergence (
 
 **Still not wired up**: `CONF_ACTIVITY_NOTES` (AI-extracted companies from meeting notes) has no repo/UI yet. Table names in the repos remain unqualified, relying on the Snowflake connection's default database/schema (via `.env`) matching `DEV_CHARITHA.SILVER`.
 
-**Unverified assumption**: `CONF_ROI_BASE.PRIORITY`, used by the sidebar filter and both tab repos, isn't listed in the column table above — that section may just be non-exhaustive. If filtering by Priority breaks, this is why.
+**Removed**: the `Priority` sidebar filter and all `PRIORITY` column references were dropped from the app (`filters/model.py`, `filters/sidebar.py`, `filters/query_builder.py`, `data/conferences_repo.py`, `analytics/conferences.py`) — `CONF_ROI_BASE` isn't documented as having that column above (only `CONF_ACTIVITY_NOTES` does), and it was an unverified assumption in the code.

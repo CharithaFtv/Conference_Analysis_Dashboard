@@ -39,9 +39,6 @@ def render_sidebar_filters() -> FilterState:
     source_types = st.sidebar.multiselect(
         "Source Type", options=get_distinct_options("SOURCE_TYPE"), key="filter_source_types"
     )
-    priorities = st.sidebar.multiselect(
-        "Priority", options=get_distinct_options("PRIORITY"), key="filter_priorities"
-    )
 
     return FilterState(
         year_range=year_range,
@@ -50,5 +47,4 @@ def render_sidebar_filters() -> FilterState:
         states=states,
         cities=cities,
         source_types=source_types,
-        priorities=priorities,
     )

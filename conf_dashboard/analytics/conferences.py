@@ -10,7 +10,6 @@ DISPLAY_COLUMNS = {
     "STATE": "State",
     "COUNTRY": "Country",
     "SOURCE_TYPE": "Type",
-    "PRIORITY": "Priority",
     "SECTORS": "Sectors",
     "CONSOLIDATED_COMPANIES_MET": "Companies Met",
     "HQTS_SOURCED": "HQTs Sourced",

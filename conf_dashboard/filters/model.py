@@ -9,7 +9,6 @@ FILTER_WIDGET_KEYS = [
     "filter_states",
     "filter_cities",
     "filter_source_types",
-    "filter_priorities",
 ]
 
 
@@ -21,4 +20,3 @@ class FilterState:
     states: list[str] = field(default_factory=list)
     cities: list[str] = field(default_factory=list)
     source_types: list[str] = field(default_factory=list)
-    priorities: list[str] = field(default_factory=list)

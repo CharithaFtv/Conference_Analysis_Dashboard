@@ -27,7 +27,6 @@ def build_where_clause(filters: FilterState, table_alias: str = "") -> tuple[str
     _in_clause("STATE", filters.states, "state")
     _in_clause("CITY", filters.cities, "city")
     _in_clause("SOURCE_TYPE", filters.source_types, "source_type")
-    _in_clause("PRIORITY", filters.priorities, "priority")
 
     if filters.sectors:
         sector_ors = []
