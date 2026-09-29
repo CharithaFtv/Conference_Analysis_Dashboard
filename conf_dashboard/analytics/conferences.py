@@ -11,7 +11,7 @@ DISPLAY_COLUMNS = {
     "COUNTRY": "Country",
     "SOURCE_TYPE": "Type",
     "SECTORS": "Sectors",
-    "CONSOLIDATED_COMPANIES_MET": "Companies Met",
+    "ALL_COMPANIES_MET_COUNT": "Companies Met",
     "HQTS_SOURCED": "HQTs Sourced",
     "HQTS_AT_HQM": "HQTs at HQM",
     "HQTS_AT_TOP_PROSPECT": "HQTs at Top Prospect",
@@ -39,7 +39,7 @@ def compute_kpis(totals_row: pd.Series) -> dict:
 
 def with_conversion_rates(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    companies_met = df["CONSOLIDATED_COMPANIES_MET"].fillna(df["COMPANIES_MET"])
+    companies_met = df["ALL_COMPANIES_MET_COUNT"].fillna(df["COMPANIES_MET"])
     df["HQT_CONVERSION_RATE"] = (df["HQTS_SOURCED"] / companies_met * 100).where(companies_met > 0)
     df["HQM_CONVERSION_RATE"] = (df["HQTS_AT_HQM"] / df["HQTS_SOURCED"] * 100).where(
         df["HQTS_SOURCED"] > 0

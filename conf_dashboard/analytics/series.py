@@ -9,10 +9,10 @@ DISPLAY_COLUMNS = {
     "TOTAL_YEARS_ATTENDED": "Years Attended",
     "TOTAL_CONFERENCES": "Conferences",
     "SECTORS": "Sectors",
-    "ERA_WEIGHTED_COMPANIES_MET": "Avg Companies Met",
-    "ERA_WEIGHTED_HQTS_SOURCED": "Avg HQTs Sourced",
-    "ERA_WEIGHTED_HQTS_TOP_PROSPECT": "Avg HQTs → Top Prospect",
-    "ERA_WEIGHTED_TOUGH_TO_CRACK": "Avg Tough→HQM",
+    "TOTAL_COMPANIES_MET": "Companies Met",
+    "TOTAL_HQTS_SOURCED": "HQTs Sourced",
+    "TOTAL_HQTS_TOP_PROSPECT": "HQTs → Top Prospect",
+    "TOTAL_TOUGH_TO_CRACK": "Tough→HQM",
     "COMPOSITE_SCORE": "Score",
 }
 

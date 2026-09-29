@@ -29,7 +29,7 @@ def get_series_score_history(series: str) -> pd.DataFrame:
         SELECT
             YEAR(s.START_DATE) AS CONFERENCE_YEAR,
             s.CONFERENCE_NAME, s.START_DATE,
-            s.CONSOLIDATED_COMPANIES_MET, s.HQTS_SOURCED, s.HQTS_AT_HQM,
+            s.ALL_COMPANIES_MET_COUNT, s.HQTS_SOURCED, s.HQTS_AT_HQM,
             s.HQTS_AT_TOP_PROSPECT, s.TOUGH_TO_CRACK_TO_HQM, s.COMPOSITE_SCORE
         FROM {SCORECARD_TABLE} s
         JOIN {SERIES_MAP_TABLE} m ON s.CONFERENCE_ID = m.ID

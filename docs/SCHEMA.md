@@ -74,10 +74,19 @@ Mappings were verified via DC_CONFERENCE.SOURCE_SERIES and PRIOR_YEAR_CONFERENCE
 | SECTORS | VARCHAR | Comma-separated sectors |
 | COMPANIES_MET | NUMBER | Distinct companies met (from activity bridges) |
 | CONSOLIDATED_COMPANIES_MET | NUMBER | MAX(AI_COMPANIES_COUNT, COMPANIES_MET) if in CONF_ACTIVITY_NOTES; else COMPANIES_MET |
+| ALL_COMPANIES_MET | ARRAY | Deduplicated array of all company names met, consolidated from three sources: (1) tagged activities, (2) untagged-but-inferred meetings, (3) AI-extracted names from notes. NULL when no source data exists for the conference. |
+| ALL_COMPANIES_MET_COUNT | NUMBER | Count of distinct companies in ALL_COMPANIES_MET. Falls back to COMPANIES_MET when the array is NULL. |
 | HQTS_SOURCED | NUMBER | Approved HQTs sourced |
 | HQTS_AT_HQM | NUMBER | HQTs at HQM or above |
 | HQTS_AT_TOP_PROSPECT | NUMBER | Approved HQTs that reached Top Prospect |
 | TOUGH_TO_CRACK_TO_HQM | NUMBER | Conference-catalyst companies that reached HQM+ |
+
+**ALL_COMPANIES_MET construction** (three sources, deduplicated):
+1. **Tagged**: Companies on activities explicitly linked to the conference via BRIDGE_ACTIVITY_SOURCE → BRIDGE_ACTIVITY_COMPANY. Keyed by DC_COMPANY_ID.
+2. **Untagged (inferred)**: Companies where a conference attendee (DC_CONFERENCE.INTERNAL_ATTENDEES → DIM_USER) had a Meeting or Call (FACT_ACTIVITY) with a SourceScrub-listed company (DC_CONFERENCE.SS_ID → INT_SS_SOURCE_COMPANY → DIM_COMPANY IDS:"SOURCESCRUB"→"DEALCLOUD") during exact conference dates (START_DATE to END_DATE), but the activity was NOT linked to the conference in BRIDGE_ACTIVITY_SOURCE. Attendee matching uses DIM_USER to map DC raw user IDs → surrogate IDs used in FACT_ACTIVITY.INTERNAL_ATTENDEES.
+3. **AI-extracted**: Company names from CONF_ACTIVITY_NOTES.AI_COMPANIES_EXTRACTED that do NOT exact-match (case-insensitive) any company name already captured by sources 1 or 2.
+
+**Dedup strategy**: Tagged + Untagged are deduped by DC_COMPANY_ID (no overlap by construction — untagged excludes tagged via NOT EXISTS on ID). This is reliable. AI names have no DC_COMPANY_ID and are deduped against DC_COMPANY_NAME using three-tier matching: (1) exact case-insensitive match, (2) CONTAINS for AI names ≥ 4 chars (e.g. "Federato" matches "Federato Technologies, Inc."), (3) parenthetical/dba pattern for short AI names < 4 chars (e.g. "VGS" matches "Very Good Security (dba VGS)", "CAF" matches "Combate A Fraude S.A. (CAF)"). Some near-duplicates may still slip through where neither substring nor parenthetical patterns apply.
 
 ### 5. CONF_ACTIVITY_NOTES (View: VW_CONF_ACTIVITY_NOTES)
 **One row per conference with aggregated meeting notes and AI-extracted companies.** Built from FACT_ACTIVITY → BRIDGE_ACTIVITY_SOURCE → DC_CONFERENCE, filtered to activity types Meeting and Conference Attended only.
@@ -114,13 +123,14 @@ Mappings were verified via DC_CONFERENCE.SOURCE_SERIES and PRIOR_YEAR_CONFERENCE
 | CONFERENCE_NAME | VARCHAR | Conference name |
 | START_DATE | DATE | Conference start date |
 | SECTORS | VARCHAR | Comma-separated sectors |
-| CONSOLIDATED_COMPANIES_MET | NUMBER | Best-available companies met count |
+| ALL_COMPANIES_MET_COUNT | NUMBER | Deduplicated companies met count (tagged + untagged + AI) — used for scoring |
+| CONSOLIDATED_COMPANIES_MET | NUMBER | Legacy companies met count (MAX of AI count and activity-bridge count) — kept for comparison |
 | COMPANIES_MET | NUMBER | Activity-bridge companies met (for comparison) |
 | HQTS_SOURCED | NUMBER | Approved HQTs sourced |
 | HQTS_AT_HQM | NUMBER | HQTs at HQM or above |
 | HQTS_AT_TOP_PROSPECT | NUMBER | Approved HQTs that reached Top Prospect |
 | TOUGH_TO_CRACK_TO_HQM | NUMBER | Conference-catalyst companies that reached HQM+ |
-| SCORE_COMPANIES_MET | FLOAT | Percentile: consolidated companies met (weight: 25%) |
+| SCORE_COMPANIES_MET | FLOAT | Percentile: ALL_COMPANIES_MET_COUNT (weight: 25%) |
 | SCORE_HQTS_SOURCED | FLOAT | Percentile: approved HQTs sourced (weight: 25%) |
 | SCORE_HQTS_TOP_PROSPECT | FLOAT | Percentile: HQTs → Top Prospect (weight: 15%) |
 | SCORE_YOY_SERIES | FLOAT | Percentile: years attended × avg HQTs/year (weight: 10%) |
@@ -135,24 +145,28 @@ Mappings were verified via DC_CONFERENCE.SOURCE_SERIES and PRIOR_YEAR_CONFERENCE
 | CONFERENCE_SERIES | VARCHAR | Canonical series name |
 | TOTAL_YEARS_ATTENDED | NUMBER | Distinct years this series was attended |
 | TOTAL_CONFERENCES | NUMBER | Total conferences in this series |
-| SECTORS | VARCHAR | Sectors covered by this series |
-| ERA_WEIGHTED_COMPANIES_MET | FLOAT | Era-weighted avg consolidated companies met per year |
+| SECTORS | VARCHAR | Distinct sectors covered by this series (comma-separated, deduplicated by flattening per-conference sector strings across all years) |
+| TOTAL_COMPANIES_MET | NUMBER | Actual companies met summed across every conference in the series (not era-weighted) — **verified live via `SELECT *`, not listed in the source doc this table's description was drawn from** |
+| TOTAL_HQTS_SOURCED | NUMBER | Actual HQTs sourced summed across the series — **verified live, undocumented upstream** |
+| TOTAL_HQTS_TOP_PROSPECT | NUMBER | Actual HQTs → Top Prospect summed across the series — **verified live, undocumented upstream** |
+| TOTAL_TOUGH_TO_CRACK | NUMBER | Actual conference-catalyst → HQM+ conversions summed across the series — **verified live, undocumented upstream** |
+| ERA_WEIGHTED_COMPANIES_MET | FLOAT | Era-weighted avg ALL_COMPANIES_MET_COUNT per year |
 | ERA_WEIGHTED_HQTS_SOURCED | FLOAT | Era-weighted avg approved HQTs per year |
 | ERA_WEIGHTED_HQTS_TOP_PROSPECT | FLOAT | Era-weighted avg HQTs reaching Top Prospect |
 | ERA_WEIGHTED_TOUGH_TO_CRACK | FLOAT | Era-weighted avg conference-catalyst → HQM+ conversions |
 | YOY_CONSISTENCY_METRIC | FLOAT | YEARS_ATTENDED × era-weighted avg HQTs (rewards consistency) |
-| SCORE_COMPANIES_MET | FLOAT | Percentile: era-weighted consolidated companies met (weight: 25%) |
+| SCORE_COMPANIES_MET | FLOAT | Percentile: era-weighted ALL_COMPANIES_MET_COUNT (weight: 25%) |
 | SCORE_HQTS_SOURCED | FLOAT | Percentile: era-weighted HQTs sourced (weight: 25%) |
 | SCORE_HQTS_TOP_PROSPECT | FLOAT | Percentile: era-weighted HQTs → Top Prospect (weight: 15%) |
 | SCORE_YOY_CONSISTENCY | FLOAT | Percentile: YoY consistency metric (weight: 10%) |
 | SCORE_TOUGH_TO_CRACK | FLOAT | Percentile: era-weighted conference-catalyst conversions (weight: 25%) |
 | COMPOSITE_SCORE | FLOAT | Weighted average of all 5 scores (0–100) |
-| HQT_TREND_SLOPE | FLOAT | Linear regression slope of HQTS_SOURCED across years (2019-2026) |
-| TREND | VARCHAR | Increasing (slope > 0.5), Declining (slope < -0.5), Flat, New, or Inactive |
+| SCORE_TREND_SLOPE | FLOAT | Linear regression slope of individual conference COMPOSITE_SCORE across years (from CONF_ROI_SCORECARD) |
+| TREND | VARCHAR | Increasing (slope > 3.0), Declining (slope < -3.0), Flat, New, or Inactive |
 
 **Era weighting**: Metrics are averaged per era then blended — early era (2019-2022) × 0.35 + recent era (2023-2026) × 0.65. Series only in one era use that era's values unblended.
 
-**Trend**: Uses `REGR_SLOPE(HQTS_SOURCED, CONFERENCE_YEAR)` across the full 2019-2026 range. Series with ≤1 year get "New" (recent only), "Inactive" (early only), or "Insufficient Data".
+**Trend**: Uses `REGR_SLOPE(CONF_ROI_SCORECARD.COMPOSITE_SCORE, CONFERENCE_YEAR)` — slopes the per-conference composite scores (which factor in all 5 scoring dimensions: companies met, HQTs sourced, HQTs at Top Prospect, YoY consistency, and tough-to-crack conversions) across the full 2019-2026 range. This captures holistic performance trends, not just HQT production. Thresholds: >3.0 = Increasing, <-3.0 = Declining. Series with ≤1 year get "New" (recent only), "Inactive" (early only), or "Insufficient Data".
 
 ---
 
@@ -164,23 +178,29 @@ Sourcing Pool → Suspect → Tough to Crack → HQM → Top Prospect → Portfo
 
 ## Key Data Caveats
 1. **COMPANIES_MET** comes from activity bridges (actual meetings logged in DealCloud), NOT from exhibitor/attendee lists.
-2. **CONSOLIDATED_COMPANIES_MET** = MAX(AI_COMPANIES_COUNT, COMPANIES_MET) for conferences with meeting notes in CONF_ACTIVITY_NOTES; plain COMPANIES_MET otherwise. This is the primary companies-met metric used in scoring.
-3. **HQTS_SOURCED** joins on conference NAME (string match), not ID — FACT_HQT_ENTRY has no conference ID column. Verified: no actual conference name mismatches causing data loss. Unmatched entries are city visits or thematic work.
-4. **TOUGH_TO_CRACK_TO_HQM** counts companies whose FIRST_ACTIVITY_DATE >= conference date and who later reached HQM+. The conference was the first-ever engagement with the firm.
-5. **SECTORS** values are abbreviations: ETS (Enterprise Tech & Services), FTS (Financial Tech & Services), VS (Vertical Software), HC (Healthcare).
-6. **DC_NUM_OF_HQTS** (from DealCloud) includes non-approved HQTs. **HQTS_SOURCED** only counts approved.
-7. **AI_COMPANIES_EXTRACTED** uses `llama3.1-70b` with structured output (`response_format => TYPE OBJECT(companies ARRAY(STRING))`). Results are non-deterministic; re-running AI_COMPLETE may produce slightly different extractions.
+2. **CONSOLIDATED_COMPANIES_MET** = MAX(AI_COMPANIES_COUNT, COMPANIES_MET) for conferences with meeting notes in CONF_ACTIVITY_NOTES; plain COMPANIES_MET otherwise. Superseded by ALL_COMPANIES_MET_COUNT as the primary companies-met metric (see #3) — kept only for comparison.
+3. **ALL_COMPANIES_MET** consolidates three sources into one deduplicated array: (a) tagged activities via BRIDGE_ACTIVITY_SOURCE, (b) untagged-but-inferred meetings from SourceScrub attendee overlap, (c) AI-extracted names from meeting notes. ALL_COMPANIES_MET_COUNT is now the companies-met metric of record throughout this app (used for scoring and displayed as "Companies Met" in both the Individual Conferences and Series Trends tabs). It may differ from CONSOLIDATED_COMPANIES_MET because it properly deduplicates across sources whereas CONSOLIDATED uses a simple MAX.
+4. **HQTS_SOURCED** joins on conference NAME (string match), not ID — FACT_HQT_ENTRY has no conference ID column. Verified: no actual conference name mismatches causing data loss. Unmatched entries are city visits or thematic work.
+5. **TOUGH_TO_CRACK_TO_HQM** counts companies whose FIRST_ACTIVITY_DATE >= conference date and who later reached HQM+. The conference was the first-ever engagement with the firm.
+6. **SECTORS** values are abbreviations: ETS (Enterprise Tech & Services), FTS (Financial Tech & Services), VS (Vertical Software), HC (Healthcare).
+7. **DC_NUM_OF_HQTS** (from DealCloud) includes non-approved HQTs. **HQTS_SOURCED** only counts approved.
+8. **AI_COMPANIES_EXTRACTED** uses `llama3.1-70b` with structured output (`response_format => TYPE OBJECT(companies ARRAY(STRING))`). Results are non-deterministic; re-running AI_COMPLETE may produce slightly different extractions.
+9. **Untagged company detection** relies on: (a) SourceScrub knowing the company was at the conference (INT_SS_SOURCE_COMPANY via DC_CONFERENCE.SS_ID), (b) the company existing in both SourceScrub and DealCloud (DIM_COMPANY.IDS has both "SOURCESCRUB" and "DEALCLOUD" keys — 69,913 companies have both), (c) the conference having INTERNAL_ATTENDEES populated, and (d) DIM_USER mapping DC raw user IDs to surrogate IDs used in FACT_ACTIVITY. Conferences without INTERNAL_ATTENDEES or without SS_ID produce no untagged companies.
+10. **CONF_SERIES_SCORECARD.TOTAL_COMPANIES_MET / TOTAL_HQTS_SOURCED / TOTAL_HQTS_TOP_PROSPECT / TOTAL_TOUGH_TO_CRACK** exist on the live table but weren't in the schema description this doc was drawn from — confirmed via `SELECT *` on 2026-09-29. If a future schema handoff omits them again, re-verify with a live query before assuming they're gone.
 
 ## Source Tables (in PROD.SILVER)
-- `DC_CONFERENCE` — conference dimension
+- `DC_CONFERENCE` — conference dimension (SS_ID links to SourceScrub, INTERNAL_ATTENDEES lists team members)
 - `FACT_ACTIVITY` — activity records (meetings, calls, emails) with BODY_FORMATTED notes
 - `FACT_HQT_ENTRY` — HQT entries with company, interest level, conference link
 - `BRIDGE_ACTIVITY_SOURCE` — links activities → conferences (by ID)
 - `BRIDGE_ACTIVITY_COMPANY` — links activities → companies (by ID)
 - `DC_COMPANY_SCD__INTEREST_AND_COV_EOD` — daily interest level snapshots
 - `DC_COMPANY` — company dimension (FIRST_ACTIVITY_DATE used for conference impact check)
-- `DIM_COMPANY` — company dimension (maps surrogate ID ↔ DealCloud ID via IDS:"DEALCLOUD")
+- `DIM_COMPANY` — company dimension (maps surrogate ID ↔ DealCloud ID via IDS:"DEALCLOUD", ↔ SourceScrub ID via IDS:"SOURCESCRUB")
+- `DIM_USER` — user dimension (maps DC__USER_ID raw DealCloud IDs ↔ surrogate ID used in activity arrays)
 - `DIM_INTEREST_LEVEL` — interest level reference data
+- `INT_SS_SOURCE_COMPANY` — SourceScrub source ↔ company affiliations (exhibitors, sponsors, attendees, etc.)
+- `SS_SOURCE` — SourceScrub conference/event dimension
 
 ## SQL Files in Workspace
 - `conf_roi_base.sql` — creates CONF_ROI_BASE table
@@ -195,7 +215,7 @@ Run order: conf_roi_base.sql → conf_activity_notes.sql → conf_roi_yoy.sql �
 
 ### Top conferences by composite score
 ```sql
-SELECT CONFERENCE_NAME, COMPOSITE_SCORE, CONSOLIDATED_COMPANIES_MET, HQTS_SOURCED, HQTS_AT_TOP_PROSPECT
+SELECT CONFERENCE_NAME, COMPOSITE_SCORE, ALL_COMPANIES_MET_COUNT, HQTS_SOURCED, HQTS_AT_TOP_PROSPECT
 FROM DEV_CHARITHA.SILVER.CONF_ROI_SCORECARD
 ORDER BY COMPOSITE_SCORE DESC
 LIMIT 20;
@@ -203,7 +223,7 @@ LIMIT 20;
 
 ### YoY trend for a series
 ```sql
-SELECT CONFERENCE_SERIES, CONFERENCE_YEAR, CONSOLIDATED_COMPANIES_MET, HQTS_SOURCED, HQTS_AT_TOP_PROSPECT
+SELECT CONFERENCE_SERIES, CONFERENCE_YEAR, ALL_COMPANIES_MET_COUNT, HQTS_SOURCED, HQTS_AT_TOP_PROSPECT
 FROM DEV_CHARITHA.SILVER.CONF_ROI_YOY
 WHERE CONFERENCE_SERIES = 'Money2020 USA'
 ORDER BY CONFERENCE_YEAR;
@@ -212,7 +232,7 @@ ORDER BY CONFERENCE_YEAR;
 ### Top series by composite score with trend
 ```sql
 SELECT CONFERENCE_SERIES, COMPOSITE_SCORE, TREND, TOTAL_YEARS_ATTENDED,
-       ERA_WEIGHTED_HQTS_SOURCED, ERA_WEIGHTED_TOUGH_TO_CRACK
+       TOTAL_COMPANIES_MET, TOTAL_HQTS_SOURCED, TOTAL_TOUGH_TO_CRACK
 FROM DEV_CHARITHA.SILVER.CONF_SERIES_SCORECARD
 ORDER BY COMPOSITE_SCORE DESC
 LIMIT 20;
@@ -232,17 +252,12 @@ ORDER BY AVG_HQTS DESC;
 
 ## App structure and schema alignment (as of 2026-09-29)
 
-The dashboard now has three tabs, reflecting a shift in focus from individual conferences to conference series as the primary lens:
+The dashboard has three tabs, reflecting a shift in focus from individual conferences to conference series as the primary lens:
 
-1. **Series Rankings** (main tab) — `conf_dashboard/ui/series_tab.py`, backed by `CONF_SERIES_SCORECARD` (`conf_dashboard/data/series_repo.py`). Ranks series by `COMPOSITE_SCORE`, shows the 5-factor era-weighted breakdown and `TREND`.
-2. **Individual Conferences** (renamed from the old "Overview") — `conf_dashboard/ui/conferences_tab.py`, backed by `CONF_ROI_BASE` + `CONF_ROI_SCORECARD` (`conf_dashboard/data/conferences_repo.py`).
-3. **Series Trends** — `conf_dashboard/ui/trends_tab.py`, backed by `conf_dashboard/data/trends_repo.py`, which now joins `CONF_ROI_SCORECARD` through `CONF_SERIES_MAP` to plot each conference's own `COMPOSITE_SCORE` by year (average per year + individual events), instead of raw yearly counts from `CONF_ROI_YOY`.
+1. **Series Rankings** (main tab) — `conf_dashboard/ui/series_tab.py`, backed by `CONF_SERIES_SCORECARD` (`conf_dashboard/data/series_repo.py`). Ranks series by `COMPOSITE_SCORE`; the metrics table shows **actual totals aggregated across the entire series** (`TOTAL_COMPANIES_MET`, `TOTAL_HQTS_SOURCED`, `TOTAL_HQTS_TOP_PROSPECT`, `TOTAL_TOUGH_TO_CRACK`), not the era-weighted per-year averages (`ERA_WEIGHTED_*`) — those still feed the score-breakdown chart and composite score, just aren't shown as raw numbers in the main table.
+2. **Individual Conferences** — `conf_dashboard/ui/conferences_tab.py`, backed by `CONF_ROI_BASE` + `CONF_ROI_SCORECARD` (`conf_dashboard/data/conferences_repo.py`). Companies-met metric is now `ALL_COMPANIES_MET_COUNT` (was `CONSOLIDATED_COMPANIES_MET`).
+3. **Series Trends** — `conf_dashboard/ui/trends_tab.py`, backed by `conf_dashboard/data/trends_repo.py`, joining `CONF_ROI_SCORECARD` through `CONF_SERIES_MAP` to plot each conference's own `COMPOSITE_SCORE` by year. Also updated to `ALL_COMPANIES_MET_COUNT`.
 
-The "Conference Detail" tab was removed; the old previously-flagged divergence (stale 6-factor score columns, `HQT_CONVERSION_RATE`/`HQM_CONVERSION_RATE` that no longer exist) was fixed as part of this pass:
-- `charts/theme.py` now defines `CONFERENCE_SCORE_COLUMNS` and `SERIES_SCORE_COLUMNS` matching the current 5-factor schemas of `CONF_ROI_SCORECARD` and `CONF_SERIES_SCORECARD` respectively.
-- Conversion rates (`HQT_CONVERSION_RATE`, `HQM_CONVERSION_RATE`) are now computed in `analytics/conferences.py` from raw counts (`HQTS_SOURCED`, `CONSOLIDATED_COMPANIES_MET`/`COMPANIES_MET`, `HQTS_AT_HQM`) rather than queried as scorecard columns.
-- `CONSOLIDATED_COMPANIES_MET` and `HQTS_AT_TOP_PROSPECT` are now used in the Individual Conferences and Series Trends tabs.
+There is no "Conference Detail" tab, and no `Priority` filter (removed 2026-09-29 — `CONF_ROI_BASE` was never confirmed to have that column).
 
-**Still not wired up**: `CONF_ACTIVITY_NOTES` (AI-extracted companies from meeting notes) has no repo/UI yet. Table names in the repos remain unqualified, relying on the Snowflake connection's default database/schema (via `.env`) matching `DEV_CHARITHA.SILVER`.
-
-**Removed**: the `Priority` sidebar filter and all `PRIORITY` column references were dropped from the app (`filters/model.py`, `filters/sidebar.py`, `filters/query_builder.py`, `data/conferences_repo.py`, `analytics/conferences.py`) — `CONF_ROI_BASE` isn't documented as having that column above (only `CONF_ACTIVITY_NOTES` does), and it was an unverified assumption in the code.
+**Still not wired up**: `CONF_ACTIVITY_NOTES` (AI-extracted companies from meeting notes) and `CONF_ROI_YOY.ALL_COMPANIES_MET` (the array itself, as opposed to its count) have no repo/UI yet. Table names in the repos remain unqualified, relying on the Snowflake connection's default database/schema (via `.env`) matching `DEV_CHARITHA.SILVER`.

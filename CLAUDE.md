@@ -5,10 +5,12 @@ Streamlit app that scores and visualizes conference ROI for the deal sourcing te
 ## Data schema
 Full table/view definitions, join logic, caveats, and example queries: **[docs/SCHEMA.md](docs/SCHEMA.md)**.
 
-Read it before touching anything in `conf_dashboard/data/` (queries) or `conf_dashboard/analytics/` (score/column names) — those modules assume specific column names from that schema. `docs/SCHEMA.md` has an "App structure and schema alignment" section noting what's wired up vs. not, and one remaining unverified assumption (`PRIORITY` column) — check it before assuming a repo function matches the live database.
+Read it before touching anything in `conf_dashboard/data/` (queries) or `conf_dashboard/analytics/` (score/column names) — those modules assume specific column names from that schema. `docs/SCHEMA.md` has an "App structure and schema alignment" section noting what's wired up vs. not. It's also caught the live schema having columns (`CONF_SERIES_SCORECARD.TOTAL_*`) that a pasted schema description omitted — trust `SELECT *` / `DESCRIBE TABLE` over a stale doc when they disagree, then fix the doc.
+
+The companies-met metric of record is `ALL_COMPANIES_MET_COUNT` (not `CONSOLIDATED_COMPANIES_MET`, which is legacy/comparison-only) — used in Individual Conferences and Series Trends.
 
 ## Tabs (in display order)
-1. **Series Rankings** (`ui/series_tab.py`) — the main tab. Ranks conference series by composite score, from `CONF_SERIES_SCORECARD`.
+1. **Series Rankings** (`ui/series_tab.py`) — the main tab. Ranks conference series by composite score, from `CONF_SERIES_SCORECARD`. Shows actual totals aggregated across the whole series (`TOTAL_COMPANIES_MET`, `TOTAL_HQTS_SOURCED`, etc.), not era-weighted per-year averages.
 2. **Individual Conferences** (`ui/conferences_tab.py`) — per-conference detail, from `CONF_ROI_BASE` + `CONF_ROI_SCORECARD`.
 3. **Series Trends** (`ui/trends_tab.py`) — a series' composite score by year, joining `CONF_ROI_SCORECARD` through `CONF_SERIES_MAP`.
 

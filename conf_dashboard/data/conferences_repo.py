@@ -30,7 +30,7 @@ def get_scored_conferences(where_sql: str, params: dict) -> pd.DataFrame:
             b.CITY, b.STATE, b.COUNTRY, b.SOURCE_TYPE, b.SECTORS,
             b.COMPANIES_MET, b.HQTS_SOURCED, b.HQTS_AT_HQM, b.HQTS_AT_TOP_PROSPECT,
             b.TOUGH_TO_CRACK_TO_HQM,
-            s.CONSOLIDATED_COMPANIES_MET, s.COMPOSITE_SCORE,
+            s.ALL_COMPANIES_MET_COUNT, s.COMPOSITE_SCORE,
             s.SCORE_COMPANIES_MET, s.SCORE_HQTS_SOURCED, s.SCORE_HQTS_TOP_PROSPECT,
             s.SCORE_YOY_SERIES, s.SCORE_TOUGH_TO_CRACK
         FROM {BASE_TABLE} b

@@ -6,7 +6,7 @@ DETAIL_DISPLAY_COLUMNS = {
     "CONFERENCE_YEAR": "Year",
     "CONFERENCE_NAME": "Conference",
     "START_DATE": "Start Date",
-    "CONSOLIDATED_COMPANIES_MET": "Companies Met",
+    "ALL_COMPANIES_MET_COUNT": "Companies Met",
     "HQTS_SOURCED": "HQTs Sourced",
     "HQTS_AT_HQM": "HQTs at HQM",
     "HQTS_AT_TOP_PROSPECT": "HQTs at Top Prospect",
