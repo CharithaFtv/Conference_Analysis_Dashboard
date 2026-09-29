@@ -1,5 +1,6 @@
 import streamlit as st
 
+from conf_dashboard.analytics.dealcloud import with_dealcloud_link
 from conf_dashboard.analytics.trends import (
     has_duplicate_years,
     series_option_labels,
@@ -34,7 +35,7 @@ def render(filters: FilterState) -> None:
     selected_label = st.selectbox("Select a conference series", options=series_labels, index=default_index)
     selected_series = series_df.iloc[series_labels.index(selected_label)]["CONFERENCE_SERIES"]
 
-    history_df = get_series_score_history(selected_series)
+    history_df = with_dealcloud_link(get_series_score_history(selected_series))
 
     st.subheader(selected_series)
 
@@ -60,5 +61,8 @@ def render(filters: FilterState) -> None:
         hide_index=True,
         column_config={
             "Score": st.column_config.ProgressColumn("Score", min_value=0, max_value=100, format="%.1f"),
+            "Conference": st.column_config.LinkColumn(
+                "Conference", display_text=r"#(.*)$", help="Click to open in DealCloud"
+            ),
         },
     )

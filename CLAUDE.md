@@ -14,6 +14,8 @@ The companies-met metric of record is `ALL_COMPANIES_MET_COUNT` (not `CONSOLIDAT
 2. **Individual Conferences** (`ui/conferences_tab.py`) — per-conference detail, from `CONF_ROI_BASE` + `CONF_ROI_SCORECARD`. Top KPI row shows HQT → TP Rate (Top Prospect), not HQT → HQM Rate.
 3. **Series Trends** (`ui/trends_tab.py`) — a series' composite score by year, joining `CONF_ROI_SCORECARD` through `CONF_SERIES_MAP`.
 
+In both Individual Conferences and Series Trends' year-by-year table, the "Conference" column is itself a clickable link to DealCloud (`conf_dashboard/analytics/dealcloud.py`), not a separate icon column — the conference ID is encoded before a `#` and the name after it, and each table's `column_config` uses `LinkColumn(display_text=r"#(.*)$")` to show only the name while linking to `DEALCLOUD_BASE_URL` (`config.py`) + the ID. The `#fragment` never reaches DealCloud's server, so odd characters in a name can't break the link — but it does mean clicking that column's header to sort no longer sorts alphabetically by name (sorts by the underlying link string instead); Rank is still the primary intended order. Series Rankings has no DealCloud link (scoped to conference-level tables only, per the user's request).
+
 There is no "Conference Detail" tab (removed) and no drill-down between tabs beyond `st.session_state["selected_conference_series"]`, which Series Rankings sets and Series Trends reads to preselect its dropdown.
 
 ## Code layout

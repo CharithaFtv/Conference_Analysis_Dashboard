@@ -4,7 +4,7 @@ import pandas as pd
 
 DETAIL_DISPLAY_COLUMNS = {
     "CONFERENCE_YEAR": "Year",
-    "CONFERENCE_NAME": "Conference",
+    "CONFERENCE_LINK": "Conference",
     "START_DATE": "Start Date",
     "ALL_COMPANIES_MET_COUNT": "Companies Met",
     "HQTS_SOURCED": "HQTs Sourced",

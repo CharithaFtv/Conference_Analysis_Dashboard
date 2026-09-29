@@ -4,7 +4,7 @@ import pandas as pd
 
 DISPLAY_COLUMNS = {
     "RANK": "Rank",
-    "CONFERENCE_NAME": "Conference",
+    "CONFERENCE_LINK": "Conference",
     "START_DATE": "Start Date",
     "CITY": "City",
     "STATE": "State",

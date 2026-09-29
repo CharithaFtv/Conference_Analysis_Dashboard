@@ -8,6 +8,7 @@ from conf_dashboard.analytics.conferences import (
     top_performers,
     with_conversion_rates,
 )
+from conf_dashboard.analytics.dealcloud import with_dealcloud_link
 from conf_dashboard.charts.conferences_charts import build_score_breakdown_bar, build_top_performers_bar
 from conf_dashboard.data.conferences_repo import get_kpi_totals, get_scored_conferences
 from conf_dashboard.filters.model import FilterState
@@ -30,7 +31,9 @@ def render(filters: FilterState) -> None:
 
     st.divider()
 
-    full_df = rank_by_score(with_conversion_rates(get_scored_conferences(where_sql, params)))
+    full_df = rank_by_score(
+        with_dealcloud_link(with_conversion_rates(get_scored_conferences(where_sql, params)))
+    )
 
     st.subheader(f"All Conferences ({len(full_df)})")
     search = st.text_input("Search by conference name", placeholder="e.g. Money2020, RSA, SaaStr...")
@@ -47,6 +50,9 @@ def render(filters: FilterState) -> None:
             "HQT Conv. Rate": st.column_config.NumberColumn(format="%.1f%%"),
             "HQM Conv. Rate": st.column_config.NumberColumn(format="%.1f%%"),
             "Rank": st.column_config.NumberColumn(format="%d"),
+            "Conference": st.column_config.LinkColumn(
+                "Conference", display_text=r"#(.*)$", help="Click to open in DealCloud"
+            ),
         },
         selection_mode="single-row",
         on_select="rerun",
