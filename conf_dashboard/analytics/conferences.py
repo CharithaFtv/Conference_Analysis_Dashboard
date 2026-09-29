@@ -27,13 +27,15 @@ def compute_kpis(totals_row: pd.Series) -> dict:
     total_companies_met = int(totals_row["TOTAL_COMPANIES_MET"] or 0)
     total_hqts = int(totals_row["TOTAL_HQTS_SOURCED"] or 0)
     total_hqm = int(totals_row["TOTAL_HQTS_AT_HQM"] or 0)
-    hqm_rate = (total_hqm / total_hqts * 100) if total_hqts else 0.0
+    total_tp = int(totals_row["TOTAL_HQTS_AT_TOP_PROSPECT"] or 0)
+    tp_rate = (total_tp / total_hqts * 100) if total_hqts else 0.0
     return {
         "total_conferences": total_conferences,
         "total_companies_met": total_companies_met,
         "total_hqts": total_hqts,
         "total_hqm": total_hqm,
-        "hqm_rate": hqm_rate,
+        "total_tp": total_tp,
+        "tp_rate": tp_rate,
     }
 
 

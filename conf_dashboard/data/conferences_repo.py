@@ -13,7 +13,8 @@ def get_kpi_totals(where_sql: str, params: dict) -> pd.Series:
             COUNT(*) AS TOTAL_CONFERENCES,
             SUM(b.COMPANIES_MET) AS TOTAL_COMPANIES_MET,
             SUM(b.HQTS_SOURCED) AS TOTAL_HQTS_SOURCED,
-            SUM(b.HQTS_AT_HQM) AS TOTAL_HQTS_AT_HQM
+            SUM(b.HQTS_AT_HQM) AS TOTAL_HQTS_AT_HQM,
+            SUM(b.HQTS_AT_TOP_PROSPECT) AS TOTAL_HQTS_AT_TOP_PROSPECT
         FROM {BASE_TABLE} b
         WHERE {where_sql}
         """,

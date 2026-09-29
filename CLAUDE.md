@@ -11,7 +11,7 @@ The companies-met metric of record is `ALL_COMPANIES_MET_COUNT` (not `CONSOLIDAT
 
 ## Tabs (in display order)
 1. **Series Rankings** (`ui/series_tab.py`) — the main tab. Ranks conference series by composite score, from `CONF_SERIES_SCORECARD`. Shows actual totals aggregated across the whole series (`TOTAL_COMPANIES_MET`, `TOTAL_HQTS_SOURCED`, etc.), not era-weighted per-year averages.
-2. **Individual Conferences** (`ui/conferences_tab.py`) — per-conference detail, from `CONF_ROI_BASE` + `CONF_ROI_SCORECARD`.
+2. **Individual Conferences** (`ui/conferences_tab.py`) — per-conference detail, from `CONF_ROI_BASE` + `CONF_ROI_SCORECARD`. Top KPI row shows HQT → TP Rate (Top Prospect), not HQT → HQM Rate.
 3. **Series Trends** (`ui/trends_tab.py`) — a series' composite score by year, joining `CONF_ROI_SCORECARD` through `CONF_SERIES_MAP`.
 
 There is no "Conference Detail" tab (removed) and no drill-down between tabs beyond `st.session_state["selected_conference_series"]`, which Series Rankings sets and Series Trends reads to preselect its dropdown.

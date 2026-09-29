@@ -26,7 +26,7 @@ def render(filters: FilterState) -> None:
     k1.metric("Conferences", f"{kpis['total_conferences']:,}")
     k2.metric("Companies Met", f"{kpis['total_companies_met']:,}")
     k3.metric("HQTs Sourced", f"{kpis['total_hqts']:,}")
-    k4.metric("HQT → HQM Rate", f"{kpis['hqm_rate']:.1f}%")
+    k4.metric("HQT → TP Rate", f"{kpis['tp_rate']:.1f}%")
 
     st.divider()
 
